@@ -32,7 +32,7 @@ the **domain layer** implemented with Django ORM, as required by Exercise 3.
 
 ### 1. Clone and enter the project
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/PakornF/Cithara.git
 cd cithara
 ```
 
