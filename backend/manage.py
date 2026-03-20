@@ -3,6 +3,9 @@
 import os
 import sys
 
+# Add this directory to path so cithara and domain are importable
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
 
 def main():
     """Run administrative tasks."""

@@ -4,7 +4,7 @@ Provides CRUD operations for all domain entities via Django Admin (Exercise 3, T
 """
 
 from django.contrib import admin
-from .models import User, Song, MusicGenerationRequest, ShareLink, Feedback
+from .models import User, Song, MusicGenerationRequest, ShareLink, Feedback, EmailVerification
 
 
 @admin.register(User)
@@ -90,6 +90,13 @@ class MusicGenerationRequestAdmin(admin.ModelAdmin):
         return obj.is_timed_out()
     timed_out_flag.boolean = True
     timed_out_flag.short_description = 'Timed Out?'
+
+
+@admin.register(EmailVerification)
+class EmailVerificationAdmin(admin.ModelAdmin):
+    list_display = ('email', 'code', 'name', 'created_at')
+    search_fields = ('email', 'name')
+    readonly_fields = ('created_at',)
 
 
 @admin.register(ShareLink)

@@ -2,6 +2,12 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
+    # Auth
+    path('auth/request-verification/', views.auth_request_verification, name='auth-request-verification'),
+    path('auth/verify-and-register/', views.auth_verify_and_register, name='auth-verify-and-register'),
+    path('auth/login/', views.auth_login, name='auth-login'),
+    path('auth/google/', views.auth_google, name='auth-google'),
+
     # Users
     path('users/', views.user_list, name='user-list'),
     path('users/<int:pk>/', views.user_detail, name='user-detail'),
@@ -9,6 +15,7 @@ urlpatterns = [
     # Songs
     path('songs/', views.song_list, name='song-list'),
     path('songs/<int:pk>/', views.song_detail, name='song-detail'),
+    path('songs/<int:pk>/share/', views.create_share_link, name='create-share-link'),
 
     # Generation Requests
     path('requests/', views.request_list, name='request-list'),
