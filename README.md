@@ -1,37 +1,45 @@
-# Cithara – Django Domain Layer
-**Exercise 3: Domain Layer Implementation**
+# Cithara 🎵
+
+> AI-powered song generation — create, manage, and share personalised music in seconds.
 
 ---
 
-## Project Overview
+## Tech Stack
 
-Cithara is a web-based AI song-generation system. This repository contains
-the **domain layer** implemented with Django ORM, as required by Exercise 3.
+| Layer | Technology |
+|---|---|
+| **Backend** | Django 5, SQLite (dev) |
+| **Frontend** | Next.js 14, TypeScript, Tailwind CSS |
+| **AI Generation** | Suno AI (async background thread) |
+| **Auth** | Email + verification code · Google OAuth (JWT) |
 
 ---
 
 ## Quick Start
 
-### Backend (Django)
+### Prerequisites
+- Python 3.11+
+- Node.js 18+
+
+### Backend
 
 ```bash
-# Create venv and install deps
+cd backend
 python -m venv venv
-source venv/bin/activate   # Windows: venv\Scripts\activate
+source venv/bin/activate        # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 
-# Migrate and run
+cp .env.example .env            # fill in your values
 python manage.py migrate
-python manage.py runserver
+python manage.py runserver 8001
 ```
 
-Backend runs at **http://127.0.0.1:8000**
+Backend runs at **http://127.0.0.1:8001**
 
-### Frontend (Next.js)
+### Frontend
 
 ```bash
 cd frontend
-cp .env.local.example .env.local   # optional; defaults to http://127.0.0.1:8000
 npm install
 npm run dev
 ```
@@ -40,61 +48,76 @@ Frontend runs at **http://localhost:3000**
 
 ---
 
-## Domain Entities Implemented
+## Environment Variables (`backend/.env`)
 
-| Model | SRS Reference | Key Constraints |
-|---|---|---|
-| `User` | FR-01–07, C-3 | Dual auth: googleId OR passwordHash (at least one required) |
-| `Song` | FR-17, FR-28–35, C-1, C-2, C-7 | Max 1M songs/user; audioFilePath only on Completed |
-| `MusicGenerationRequest` | FR-08–18, FR-24–27, C-4, C-5, C-9 | Title mandatory; customStory ≤ 1000 chars; 15-min timeout |
-| `ShareLink` | FR-36–41, C-6, C-8 | Composition under Song; cascade delete |
-| `Feedback` | FR-50, FR-51, C-14 | Internal only; optional Song FK |
+| Variable | Description |
+|---|---|
+| `SECRET_KEY` | Django secret key |
+| `DEBUG` | `True` for local development |
+| `ALLOWED_HOSTS` | Comma-separated hosts |
+| `EMAIL_HOST` | SMTP host (e.g. `smtp.gmail.com`) |
+| `EMAIL_PORT` | SMTP port (e.g. `587`) |
+| `EMAIL_HOST_USER` | Sender email address |
+| `EMAIL_HOST_PASSWORD` | App password (Gmail: enable 2FA → [App Password](https://myaccount.google.com/apppasswords)) |
+| `GOOGLE_CLIENT_ID` | Google OAuth client ID |
+| `SUNO_COOKIE` | Suno AI session cookie for generation |
 
-**Enumerations:** `Genre`, `Mood`, `Occasion`, `VoiceType`, `GenerationStatus`
+> **Dev tip:** If email is not configured, verification codes are printed to the Django terminal instead.
 
 ---
 
-## Frontend (Next.js + Tailwind)
+## Pages
 
-The frontend is a responsive single-page application with:
-
-- **Home** – Landing page and overview
-- **Users** – List and create users
-- **Songs** – List, create, view, delete songs; generate share links
-- **Generate** – Submit music generation requests
-- **Share** – View shared songs via `/share/<token>`
+| Route | Description |
+|---|---|
+| `/` | Landing page & login / sign-up |
+| `/dashboard` | Personalised hub with quick links |
+| `/songs` | Your saved song library — play, share, delete |
+| `/songs/[id]` | Song detail with audio player |
+| `/requests` | Submit a new AI generation request |
+| `/users` | Browse all creators |
+| `/users/[id]/songs` | View another user's song library |
+| `/share/[token]` | Public shared song page (no login required) |
 
 ---
 
 ## API Endpoints
 
+### Auth
 | Method | URL | Action |
 |---|---|---|
-| GET/POST | `/users/` | List / create users |
-| GET/PATCH/DELETE | `/users/<id>/` | Get / update / delete user |
-| GET/POST | `/songs/?user_id=` | List / create songs |
-| GET/PATCH/DELETE | `/songs/<id>/` | Get / update / delete song |
-| POST | `/songs/<id>/share/` | Create share link for song |
-| GET/POST | `/requests/?user_id=` | List / create generation requests |
-| GET/PATCH | `/requests/<id>/` | Get / update request |
-| GET | `/share/<token>/` | Access shared song |
-| GET/POST | `/feedback/` | List / submit feedback |
+| POST | `/auth/request-verification/` | Send 6-digit email verification code |
+| POST | `/auth/verify-and-register/` | Verify code and create account |
+| POST | `/auth/login/` | Email + password login |
+| POST | `/auth/google/` | Google OAuth login / register |
+
+### Resources
+| Method | URL | Action |
+|---|---|---|
+| GET / POST | `/users/` | List all users / create user |
+| GET / PATCH / DELETE | `/users/<id>/` | Get / update / delete user |
+| GET / POST | `/songs/?user_id=` | List songs (optionally filtered by user) / create song |
+| GET / PATCH / DELETE | `/songs/<id>/` | Get / update / delete song |
+| POST | `/songs/<id>/share/` | Create or retrieve share link |
+| GET | `/share/<token>/` | Access a shared song |
+| GET / POST | `/requests/?user_id=` | List generation requests / submit new request |
+| GET / PATCH | `/requests/<id>/` | Get / update generation request |
+| GET / POST | `/feedback/` | List / submit feedback (internal) |
 
 ---
 
-## Email verification (Create Account)
+## Domain Models
 
-By default, verification codes are **printed to the Django terminal** (not sent by email). To send real emails:
+| Model | Key Constraints |
+|---|---|
+| `User` | Dual auth: `google_id` OR `password_hash` (at least one required) |
+| `Song` | Max 1 M songs/user; `audio_file_path` only set when status = `Completed` |
+| `MusicGenerationRequest` | Title mandatory; `custom_story` ≤ 1 000 chars; 15-min generation timeout |
+| `ShareLink` | OneToOne with `Song`; cascade-deleted with its parent |
+| `Feedback` | Internal only; `Song` FK is optional |
+| `EmailVerification` | Temporary; 6-digit code, expires in 10 minutes |
 
-1. Set environment variables before running the server:
-   ```bash
-   export EMAIL_HOST=smtp.gmail.com
-   export EMAIL_PORT=587
-   export EMAIL_HOST_USER=your-email@gmail.com
-   export EMAIL_HOST_PASSWORD=your-app-password
-   ```
-2. For Gmail: enable 2FA, then create an [App Password](https://myaccount.google.com/apppasswords).
-3. See `backend/.env.example` for more options.
+**Enumerations:** `Genre` (Pop · Rock · Jazz · Classical · Hip-Hop) · `Mood` · `Occasion` · `VoiceType` · `GenerationStatus`
 
 ---
 
@@ -104,7 +127,7 @@ By default, verification codes are **printed to the Django terminal** (not sent 
 cd backend && python manage.py createsuperuser
 ```
 
-Navigate to `http://127.0.0.1:8001/admin/` for full CRUD.
+Navigate to **http://127.0.0.1:8001/admin/** for full CRUD access across all models.
 
 ---
 
@@ -112,12 +135,24 @@ Navigate to `http://127.0.0.1:8001/admin/` for full CRUD.
 
 ```
 cithara/
-├── manage.py
 ├── requirements.txt
-├── cithara/          # Django project
-│   ├── settings.py
-│   └── urls.py
-├── domain/           # Domain app (models, views, admin)
-└── frontend/         # Next.js + Tailwind UI
-    └── src/app/      # Pages and layout
+├── backend/
+│   ├── manage.py
+│   ├── cithara/              # Django project (settings, urls)
+│   └── domain/               # Models, views, admin, Suno service
+│       ├── models.py
+│       ├── views.py
+│       ├── suno_service.py
+│       └── migrations/
+└── frontend/
+    └── src/
+        ├── app/              # Next.js App Router pages
+        │   ├── dashboard/
+        │   ├── songs/
+        │   ├── users/
+        │   ├── requests/
+        │   └── share/[token]/
+        ├── components/       # Shared UI components (AudioPlayer, …)
+        ├── contexts/         # AuthContext
+        └── lib/              # API client & TypeScript types
 ```
