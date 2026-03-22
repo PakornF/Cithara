@@ -32,7 +32,7 @@ export default function LoginPage() {
     try {
       const user = await api.auth.login({ email, password });
       login(user);
-      router.push("/songs");
+      router.push("/dashboard");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed");
     } finally {
@@ -67,7 +67,7 @@ export default function LoginPage() {
         code,
       });
       login(user);
-      router.push("/songs");
+      router.push("/dashboard");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Verification failed");
     } finally {
@@ -81,7 +81,7 @@ export default function LoginPage() {
     try {
       const user = await api.auth.google(credential);
       login(user);
-      router.push("/songs");
+      router.push("/dashboard");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Google sign-in failed");
     } finally {
@@ -298,12 +298,7 @@ export default function LoginPage() {
             </form>
           )}
         </div>
-        <p className="mt-6 text-center text-sm text-stone-500">
-          <Link href="/songs" className="text-amber-400 hover:underline">
-            Continue without logging in
-          </Link>{" "}
-          (demo mode)
-        </p>
+
       </div>
     </div>
   );

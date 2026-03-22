@@ -30,6 +30,8 @@ export interface Song {
   creation_date: string;
   owner__name?: string;
   owner__email?: string;
+  is_saved?: boolean;
+  audio_file_path?: string;
 }
 
 export interface SongDetail extends Song {

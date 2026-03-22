@@ -1,4 +1,17 @@
+import os
 from pathlib import Path
+
+try:
+    import ssl
+    import certifi
+    _orig_create_default_context = ssl.create_default_context
+    def custom_create_default_context(purpose=ssl.Purpose.SERVER_AUTH, *, cafile=None, capath=None, cadata=None):
+        if cafile is None:
+            cafile = certifi.where()
+        return _orig_create_default_context(purpose=purpose, cafile=cafile, capath=capath, cadata=cadata)
+    ssl.create_default_context = custom_create_default_context
+except ImportError:
+    pass
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -83,3 +96,21 @@ MAX_CUSTOM_STORY_LENGTH = 1000
 
 # Song generation timeout in minutes (NFR-04)
 GENERATION_TIMEOUT_MINUTES = 15
+
+# Email – verification codes
+# Without EMAIL_HOST: prints to Django terminal (dev). With EMAIL_HOST: sends real emails.
+EMAIL_BACKEND = (
+    "django.core.mail.backends.smtp.EmailBackend"
+    if os.environ.get("EMAIL_HOST")
+    else "django.core.mail.backends.console.EmailBackend"
+)
+EMAIL_HOST = os.environ.get("EMAIL_HOST", "")
+EMAIL_PORT = int(os.environ.get("EMAIL_PORT", "587"))
+EMAIL_USE_TLS = os.environ.get("EMAIL_USE_TLS", "true").lower() == "true"
+EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
+DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "Cithara <noreply@cithara.local>")
+
+# Suno AI API
+SUNO_AI_API_KEY = os.environ.get("SUNO_AI_API_KEY", "")
+SUNO_API_BASE_URL = os.environ.get("SUNO_API_BASE_URL", "https://api.sunoapi.org")

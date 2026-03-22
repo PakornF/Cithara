@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import type { MusicGenerationRequest, User } from "@/lib/types";
@@ -11,15 +12,13 @@ const OCCASIONS = ["Birthday", "Wedding", "Graduation", "Anniversary", "Custom"]
 const VOICES = ["Male", "Female"] as const;
 
 export default function RequestsPage() {
-  const { user: authUser } = useAuth();
+  const { user: authUser, isLoading: authLoading } = useAuth();
+  const router = useRouter();
   const [requests, setRequests] = useState<MusicGenerationRequest[]>([]);
-  const [users, setUsers] = useState<User[]>([]);
-  const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(true);
   const [form, setForm] = useState({
-    user_id: 0,
     title: "",
     genre: "Pop",
     mood: "Happy",
@@ -29,25 +28,28 @@ export default function RequestsPage() {
   });
   const [submitting, setSubmitting] = useState(false);
 
-  const loadUsers = async () => {
-    const data = await api.users.list();
-    setUsers(data);
-    const preferred =
-      authUser?.id && data.some((u) => u.id === authUser.id)
-        ? authUser.id
-        : data[0]?.id;
-    if (data.length && preferred) {
-      setForm((f) => ({ ...f, user_id: f.user_id || preferred }));
-      setSelectedUserId(preferred);
-    }
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    const int = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(int);
+  }, []);
+
+  const getProgress = (r: MusicGenerationRequest) => {
+    if (r.status === 'Completed') return 100;
+    if (r.status === 'Failed' || r.status === 'TimedOut' || r.status === 'Rejected') return 0;
+    const elapsedMs = Math.max(0, now - new Date(r.submitted_at).getTime());
+    return Math.min(99, Math.floor(elapsedMs / 1200)); 
   };
 
   const loadRequests = async () => {
+    if (!authUser?.id) {
+      setRequests([]);
+      setLoading(false);
+      return;
+    }
     try {
       setError(null);
-      const data = selectedUserId
-        ? await api.requests.list(selectedUserId)
-        : await api.requests.list();
+      const data = await api.requests.list(authUser.id);
       setRequests(data);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load requests");
@@ -57,21 +59,33 @@ export default function RequestsPage() {
   };
 
   useEffect(() => {
-    loadUsers();
+    loadRequests();
   }, [authUser?.id]);
 
   useEffect(() => {
-    loadRequests();
-  }, [selectedUserId]);
+    if (!authUser?.id) return;
+    const hasActive = requests.some(r => r.status === "Pending" || r.status === "InProgress");
+    if (!hasActive) return;
+
+    const interval = setInterval(async () => {
+      try {
+        const data = await api.requests.list(authUser.id);
+        setRequests(data);
+      } catch (e) {
+        // ignore errors during background poll
+      }
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [authUser?.id, requests]);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.user_id || !form.title.trim()) return;
+    if (!authUser?.id || !form.title.trim()) return;
     setSubmitting(true);
     try {
       await api.requests.create({
         ...form,
-        user_id: form.user_id,
+        user_id: authUser.id,
         title: form.title.trim(),
         custom_story: form.custom_story || undefined,
       });
@@ -88,7 +102,13 @@ export default function RequestsPage() {
     }
   };
 
-  if (loading) {
+  useEffect(() => {
+    if (!authLoading && !authUser) {
+      router.push("/");
+    }
+  }, [authUser, authLoading, router]);
+
+  if (authLoading || loading) {
     return (
       <div className="mx-auto max-w-4xl px-4 py-12">
         <p className="text-stone-400">Loading…</p>
@@ -102,20 +122,6 @@ export default function RequestsPage() {
         <h1 className="font-serif text-3xl font-bold text-amber-400">
           Generate Song
         </h1>
-        <select
-          value={selectedUserId ?? ""}
-          onChange={(e) =>
-            setSelectedUserId(Number(e.target.value) || null)
-          }
-          className="rounded-lg border border-stone-700 bg-stone-900 px-3 py-2 text-sm text-stone-100 focus:border-amber-600 focus:outline-none max-w-[200px]"
-        >
-          <option value="">All users</option>
-          {users.map((u) => (
-            <option key={u.id} value={u.id}>
-              {u.name}
-            </option>
-          ))}
-        </select>
       </div>
 
       {error && (
@@ -149,27 +155,7 @@ export default function RequestsPage() {
                   required
                 />
               </div>
-              <div>
-                <label className="mb-1 block text-sm text-stone-400">User</label>
-                <select
-                  value={form.user_id}
-                  onChange={(e) =>
-                    setForm((f) => ({
-                      ...f,
-                      user_id: Number(e.target.value),
-                    }))
-                  }
-                  className="w-full rounded-lg border border-stone-700 bg-stone-900 px-3 py-2 text-stone-100 focus:border-amber-600 focus:outline-none"
-                  required
-                >
-                  <option value={0}>Select user</option>
-                  {users.map((u) => (
-                    <option key={u.id} value={u.id}>
-                      {u.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+
               <div>
                 <label className="mb-1 block text-sm text-stone-400">Genre</label>
                 <select
@@ -289,6 +275,7 @@ export default function RequestsPage() {
                   }`}
                 >
                   {r.status}
+                  {(r.status === "InProgress" || r.status === "Pending") && ` (${getProgress(r)}%)`}
                   {r.is_retry && " (retry)"}
                 </span>
                 {r.error_message && (

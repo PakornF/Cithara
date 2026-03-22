@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { api } from "@/lib/api";
 import type { SongDetail } from "@/lib/types";
+import AudioPlayer from "@/components/AudioPlayer";
 
 export default function SongDetailPage() {
   const params = useParams();
@@ -114,8 +115,8 @@ export default function SongDetailPage() {
 
         {song.audio_file_path && (
           <div className="mt-6">
-            <h3 className="text-sm font-medium text-stone-400">Audio</h3>
-            <p className="mt-1 text-stone-300">{song.audio_file_path}</p>
+            <h3 className="text-sm font-medium text-stone-400 mb-2">Audio</h3>
+            <AudioPlayer src={song.audio_file_path} />
           </div>
         )}
 

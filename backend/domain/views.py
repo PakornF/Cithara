@@ -14,8 +14,11 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
+from django.conf import settings
+from django.core.mail import send_mail
 from django.contrib.auth.hashers import make_password, check_password
 from .models import User, Song, MusicGenerationRequest, ShareLink, Feedback, GenerationStatus, EmailVerification
+from .suno_service import launch_generation_thread
 
 
 def _body(request):
@@ -62,7 +65,21 @@ def auth_request_verification(request):
         name=name,
         password_hash=password_hash,
     )
-    print(f"[Cithara] Verification code for {email}: {code}")
+
+    subject = "Your Cithara verification code"
+    message = f"Hi {name},\n\nYour verification code is: {code}\n\nThis code expires in 10 minutes.\n\n— Cithara"
+    try:
+        send_mail(
+            subject,
+            message,
+            settings.DEFAULT_FROM_EMAIL,
+            [email],
+            fail_silently=False,
+        )
+    except Exception as e:
+        print(f"[Cithara] Email failed ({e}); code for {email}: {code}")
+        return JsonResponse({'error': 'Could not send verification email. Check server logs.'}, status=500)
+
     return JsonResponse({'sent': True, 'email': email})
 
 
@@ -270,7 +287,8 @@ def song_list(request):
             qs = qs.filter(owner_id=user_id)
         songs = list(qs.values(
             'id', 'title', 'genre', 'mood', 'occasion', 'voice_type',
-            'status', 'creation_date', 'owner__name', 'owner__email'
+            'status', 'creation_date', 'owner__name', 'owner__email',
+            'is_saved', 'audio_file_path'
         ))
         return JsonResponse(songs, safe=False)
 
@@ -324,7 +342,7 @@ def song_detail(request, pk):
     if request.method in ('PATCH', 'PUT'):
         data = _body(request)
         for field in ('title', 'genre', 'mood', 'occasion', 'voice_type',
-                      'custom_story', 'prompt_used', 'audio_file_path', 'duration', 'status'):
+                      'custom_story', 'prompt_used', 'audio_file_path', 'duration', 'status', 'is_saved'):
             if field in data:
                 setattr(song, field, data[field])
         song.full_clean()
@@ -377,6 +395,10 @@ def request_list(request):
         )
         req.full_clean()
         req.save()
+        
+        # Trigger the async Suno AI generation
+        launch_generation_thread(req.id)
+
         return JsonResponse({
             'id': req.id, 'title': req.title, 'status': req.status, 'is_retry': req.is_retry
         }, status=201)

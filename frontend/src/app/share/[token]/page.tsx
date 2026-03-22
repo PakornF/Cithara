@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { api } from "@/lib/api";
 import type { SharedSong } from "@/lib/types";
+import AudioPlayer from "@/components/AudioPlayer";
 
 export default function SharePage() {
   const params = useParams();
@@ -70,11 +71,8 @@ export default function SharePage() {
           {song.genre} · {song.mood}
         </p>
         {song.audio_file_path ? (
-          <div className="mt-8">
-            <p className="text-sm text-stone-500">Audio: {song.audio_file_path}</p>
-            <p className="mt-2 text-xs text-stone-600">
-              (In production, an audio player would appear here.)
-            </p>
+          <div className="mt-8 text-left">
+            <AudioPlayer src={song.audio_file_path} />
           </div>
         ) : (
           <p className="mt-8 text-sm text-stone-500">

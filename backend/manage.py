@@ -6,6 +6,13 @@ import sys
 # Add this directory to path so cithara and domain are importable
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+# Load .env from backend directory (for EMAIL_* etc.)
+try:
+    from dotenv import load_dotenv
+    load_dotenv(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env"))
+except ImportError:
+    pass
+
 
 def main():
     """Run administrative tasks."""

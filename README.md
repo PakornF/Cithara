@@ -82,13 +82,29 @@ The frontend is a responsive single-page application with:
 
 ---
 
+## Email verification (Create Account)
+
+By default, verification codes are **printed to the Django terminal** (not sent by email). To send real emails:
+
+1. Set environment variables before running the server:
+   ```bash
+   export EMAIL_HOST=smtp.gmail.com
+   export EMAIL_PORT=587
+   export EMAIL_HOST_USER=your-email@gmail.com
+   export EMAIL_HOST_PASSWORD=your-app-password
+   ```
+2. For Gmail: enable 2FA, then create an [App Password](https://myaccount.google.com/apppasswords).
+3. See `backend/.env.example` for more options.
+
+---
+
 ## Django Admin
 
 ```bash
-python manage.py createsuperuser
+cd backend && python manage.py createsuperuser
 ```
 
-Navigate to `http://127.0.0.1:8000/admin/` for full CRUD.
+Navigate to `http://127.0.0.1:8001/admin/` for full CRUD.
 
 ---
 

@@ -165,6 +165,10 @@ class Song(models.Model):
         max_length=20, choices=GenerationStatus.choices,
         default=GenerationStatus.PENDING,
     )
+    is_saved = models.BooleanField(
+        default=False,
+        help_text="True if the user explicitly saved this to their library.",
+    )
     creation_date = models.DateTimeField(auto_now_add=True)
 
     class Meta:

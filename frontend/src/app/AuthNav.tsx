@@ -19,12 +19,7 @@ export function AuthNav() {
             >
               Cithara
             </Link>
-            <Link
-              href="/songs"
-              className="text-sm font-medium text-stone-400 hover:text-amber-400"
-            >
-              Skip to app
-            </Link>
+
           </div>
         </div>
       </nav>
@@ -36,12 +31,18 @@ export function AuthNav() {
       <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-14 items-center justify-between">
           <Link
-            href="/songs"
+            href="/dashboard"
             className="text-xl font-serif font-bold tracking-tight text-amber-400 hover:text-amber-300"
           >
             Cithara
           </Link>
           <div className="flex items-center gap-6">
+            <Link
+              href="/dashboard"
+              className="text-sm font-medium text-stone-400 hover:text-amber-400"
+            >
+              Dashboard
+            </Link>
             <Link
               href="/users"
               className="text-sm font-medium text-stone-400 hover:text-amber-400"

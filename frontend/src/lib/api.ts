@@ -86,6 +86,11 @@ export const api = {
         method: 'POST',
         body: JSON.stringify(data),
       }),
+    update: (id: number, data: Partial<import('./types').SongDetail>) =>
+      fetchApi<import('./types').SongDetail>(`/songs/${id}/`, {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+      }),
     delete: (id: number) =>
       fetchApi<{ deleted: boolean }>(`/songs/${id}/`, { method: 'DELETE' }),
     createShareLink: (id: number) =>
