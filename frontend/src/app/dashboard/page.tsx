@@ -33,7 +33,7 @@ export default function DashboardIndex() {
             Welcome back, {user.name}
           </h1>
           <p className="mt-4 text-lg text-stone-400 max-w-2xl">
-            This is your new Cithara dashboard. Generate amazing AI songs in seconds, manage your library, and share with the world.
+            This is your Cithara dashboard. Generate amazing AI songs in seconds, manage your library, and share with the world.
           </p>
         </header>
 

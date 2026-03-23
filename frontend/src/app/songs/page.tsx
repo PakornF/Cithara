@@ -18,6 +18,7 @@ export default function SongsPage() {
   const router = useRouter();
   const [songs, setSongs] = useState<Song[]>([]);
   const [targetUserId, setTargetUserId] = useState<number | undefined>();
+  const [targetUserName, setTargetUserName] = useState<string | null>(null);
   const [isOwnLibrary, setIsOwnLibrary] = useState(true);
   const [activeTab, setActiveTab] = useState<"library" | "unsaved">("library");
   const [loading, setLoading] = useState(true);
@@ -30,7 +31,11 @@ export default function SongsPage() {
       const uid = params.get("user_id");
       const target = uid ? Number(uid) : authUser.id;
       setTargetUserId(target);
-      setIsOwnLibrary(!uid || target === authUser.id);
+      const own = !uid || target === authUser.id;
+      setIsOwnLibrary(own);
+      if (!own) {
+        api.users.get(target).then((u) => setTargetUserName(u.name)).catch(() => setTargetUserName(null));
+      }
     }
   }, [authUser]);
 
@@ -100,7 +105,7 @@ export default function SongsPage() {
     <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="font-serif text-3xl font-bold text-amber-400">
-          {isOwnLibrary ? "My Songs" : "User Library"}
+          {isOwnLibrary ? "My Songs" : targetUserName ? `${targetUserName}'s Library` : "User Library"}
         </h1>
         <div className="flex flex-wrap items-center gap-3">
           <Link
