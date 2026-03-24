@@ -41,6 +41,7 @@ Backend runs at **http://127.0.0.1:8001**
 ```bash
 cd frontend
 npm install
+cp .env.example .env.local      # fill in your values
 npm run dev
 ```
 
@@ -48,19 +49,27 @@ Frontend runs at **http://localhost:3000**
 
 ---
 
-## Environment Variables (`backend/.env`)
+## Environment Variables
+
+### Backend (`backend/.env`)
 
 | Variable | Description |
 |---|---|
-| `SECRET_KEY` | Django secret key |
-| `DEBUG` | `True` for local development |
-| `ALLOWED_HOSTS` | Comma-separated hosts |
 | `EMAIL_HOST` | SMTP host (e.g. `smtp.gmail.com`) |
 | `EMAIL_PORT` | SMTP port (e.g. `587`) |
+| `EMAIL_USE_TLS` | Use TLS (`true` / `false`) |
 | `EMAIL_HOST_USER` | Sender email address |
 | `EMAIL_HOST_PASSWORD` | App password (Gmail: enable 2FA → [App Password](https://myaccount.google.com/apppasswords)) |
-| `GOOGLE_CLIENT_ID` | Google OAuth client ID |
-| `SUNO_COOKIE` | Suno AI session cookie for generation |
+| `DEFAULT_FROM_EMAIL` | From header for verification emails |
+| `SUNO_AI_API_KEY` | Suno API key |
+| `SUNO_API_BASE_URL` | Suno API base URL (default: `https://api.sunoapi.org`) |
+
+### Frontend (`frontend/.env.local`)
+
+| Variable | Description |
+|---|---|
+| `NEXT_PUBLIC_API_URL` | Django backend base URL (default: `http://127.0.0.1:8001`) |
+| `NEXT_PUBLIC_GOOGLE_CLIENT_ID` | Google OAuth client ID for web login |
 
 > **Dev tip:** If email is not configured, verification codes are printed to the Django terminal instead.
 
