@@ -114,3 +114,16 @@ DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "Cithara <noreply@cith
 # Suno AI API
 SUNO_AI_API_KEY = os.environ.get("SUNO_AI_API_KEY", "")
 SUNO_API_BASE_URL = os.environ.get("SUNO_API_BASE_URL", "https://api.sunoapi.org")
+
+# -----------------------------------------------------------------------
+# Song Generation Strategy (Exercise 4 – Strategy Pattern)
+# -----------------------------------------------------------------------
+# Controls which song-generation backend is used at runtime.
+#   mock  → MockSongGeneratorStrategy  (offline, deterministic, no API key needed)
+#   suno  → SunoSongGeneratorStrategy  (calls sunoapi.org, requires SUNO_AI_API_KEY)
+#
+# Set in your environment or .env file:
+#   GENERATOR_STRATEGY=mock    (default)
+#   GENERATOR_STRATEGY=suno
+# -----------------------------------------------------------------------
+GENERATOR_STRATEGY = os.environ.get("GENERATOR_STRATEGY", "mock")
