@@ -74,7 +74,12 @@ Submitting generation request…
 # Start server in mock mode
 GENERATOR_STRATEGY=mock python manage.py runserver
 
-# Submit a generation request (create a user first if needed)
+# Create a user first (if you don't already have one)
+curl -X POST http://localhost:8000/users/ \
+  -H "Content-Type: application/json" \
+  -d '{"email":"demo@example.com","name":"Demo User","password_hash":"dev-only"}'
+
+# Submit a generation request (replace user_id with an existing user)
 curl -X POST http://localhost:8000/requests/ \
   -H "Content-Type: application/json" \
   -d '{"user_id": 1, "title": "Birthday Song", "genre": "Pop", "mood": "Happy", "voice_type": "Female", "occasion": "Birthday"}'

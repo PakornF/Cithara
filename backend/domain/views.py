@@ -16,6 +16,7 @@ from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django.conf import settings
 from django.core.mail import send_mail
+from django.core.exceptions import ValidationError
 from django.contrib.auth.hashers import make_password, check_password
 from .models import User, Song, MusicGenerationRequest, ShareLink, Feedback, GenerationStatus, EmailVerification
 from .suno_service import launch_generation_thread
@@ -382,7 +383,19 @@ def request_list(request):
 
     if request.method == 'POST':
         data = _body(request)
-        user = get_object_or_404(User, pk=data.get('user_id'))
+        user_id = data.get('user_id')
+        if user_id is None:
+            return JsonResponse({'error': 'user_id is required'}, status=400)
+        try:
+            user_id = int(user_id)
+        except (TypeError, ValueError):
+            return JsonResponse({'error': 'user_id must be an integer'}, status=400)
+
+        try:
+            user = User.objects.get(pk=user_id)
+        except User.DoesNotExist:
+            return JsonResponse({'error': f'User with id {user_id} does not exist'}, status=400)
+
         req = MusicGenerationRequest(
             user=user,
             title=data.get('title', ''),
@@ -393,7 +406,10 @@ def request_list(request):
             custom_story=data.get('custom_story'),
             is_retry=data.get('is_retry', False),
         )
-        req.full_clean()
+        try:
+            req.full_clean()
+        except ValidationError as exc:
+            return JsonResponse({'error': exc.message_dict if hasattr(exc, 'message_dict') else exc.messages}, status=400)
         req.save()
         
         # Trigger the async Suno AI generation
