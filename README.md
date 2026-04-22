@@ -107,12 +107,27 @@ cd frontend && npm run dev
 
 The mock strategy returns a fixed placeholder audio URL immediately — no network call to Suno is made. Useful for development and testing.
 
-**Expected Django terminal output when a song is generated:**
+**Quick demo without the frontend** (management command):
+
+```bash
+cd backend
+python manage.py demo_generation --title "My Birthday Song"
+```
+
+Example output:
 
 ```
 [get_strategy] Active strategy: MockSongGeneratorStrategy
-[MockSongGeneratorStrategy] Generating mock song for request_id=1, title='My Song'
-[MockSongGeneratorStrategy] Done. task_id=MOCK-XXXXXXXXXXXX, audio_url=https://...
+
+=== Active strategy: MockSongGeneratorStrategy ===
+Submitting generation request…
+[MockSongGeneratorStrategy] Generating mock song for request_id=0, title='My Birthday Song'
+[MockSongGeneratorStrategy] Done. task_id=MOCK-92D8BC4D1BB9, audio_url=https://…
+
+✔ Generation succeeded!
+  task_id  : MOCK-92D8BC4D1BB9
+  audio_url: https://www.w3schools.com/html/horse.mp3
+  metadata : {'strategy': 'mock', 'title': 'My Birthday Song', ...}
 ```
 
 ### Suno mode (real AI generation)
@@ -127,21 +142,69 @@ SUNO_AI_API_KEY=your_api_key_here
 
 3. Restart the backend server, then start both servers as above.
 
-The Suno strategy:
-1. POSTs to `https://api.sunoapi.org/api/v1/generate` to create a generation task.
-2. Polls `GET /api/v1/generate/record-info?taskId=<id>` every 5 seconds (up to 5 minutes) until status is `SUCCESS`.
-3. Saves the returned `audioUrl` to the song record.
+**Quick demo without the frontend:**
 
-**Expected Django terminal output:**
+```bash
+cd backend
+GENERATOR_STRATEGY=suno SUNO_AI_API_KEY=your_key python manage.py demo_generation --title "My Suno Song"
+```
+
+Example output:
 
 ```
 [get_strategy] Active strategy: SunoSongGeneratorStrategy
-[SunoSongGeneratorStrategy] Submitting generation for request_id=1, title='My Song'
-[SunoSongGeneratorStrategy] Task created: taskId=abc123...
-[SunoSongGeneratorStrategy] Polling attempt 1/60 for taskId=abc123...
+
+=== Active strategy: SunoSongGeneratorStrategy ===
+Submitting generation request…
+[SunoSongGeneratorStrategy] Submitting generation for request_id=0, title='My Suno Song'
+[SunoSongGeneratorStrategy] Task created: taskId=<uuid>
+[SunoSongGeneratorStrategy] Polling attempt 1/60 for taskId=<uuid>
+[SunoSongGeneratorStrategy] Status=PENDING
 ...
-[SunoSongGeneratorStrategy] Generation SUCCESS. audioUrl=https://...
+[SunoSongGeneratorStrategy] Status=SUCCESS
+[SunoSongGeneratorStrategy] Generation SUCCESS. audioUrl=https://cdn.sunoapi.org/audio/...
+
+✔ Generation succeeded!
+  task_id  : <uuid>
+  audio_url: https://cdn.sunoapi.org/audio/...
 ```
+
+---
+
+## Song Generation — Strategy Pattern
+
+Cithara uses the **Strategy pattern** to swap generation behaviour via a single environment variable. The selection is centralised in `backend/domain/generation/selector.py` — no if/else logic is scattered through the rest of the codebase.
+
+```
+backend/domain/generation/
+├── interface.py         # SongGenerationStrategy (ABC) + GenerationRequest / GenerationResult DTOs
+├── mock_strategy.py     # MockSongGeneratorStrategy  — offline, deterministic
+├── suno_strategy.py     # SunoSongGeneratorStrategy  — calls sunoapi.org
+└── selector.py          # get_strategy() — single selection point (reads GENERATOR_STRATEGY)
+
+backend/domain/suno_service.py   # Orchestrator: ORM → DTO → strategy → ORM
+```
+
+| Role | Class |
+|---|---|
+| Strategy interface | `SongGenerationStrategy` (ABC) |
+| Concrete Strategy A | `MockSongGeneratorStrategy` |
+| Concrete Strategy B | `SunoSongGeneratorStrategy` |
+| Orchestrator | `generate_song_task()` in `suno_service.py` |
+| Strategy selector | `get_strategy()` in `selector.py` |
+
+The orchestrator never imports a concrete strategy directly — it always calls `get_strategy()`.
+
+---
+
+## Running Tests
+
+```bash
+cd backend
+python manage.py test domain.tests_strategy --verbosity=2
+```
+
+22 tests covering strategy interface contract, mock strategy behaviour, Suno strategy HTTP mocking and polling, and the selector's fallback logic.
 
 ---
 
@@ -247,10 +310,10 @@ cithara/
 │       ├── urls.py
 │       ├── suno_service.py       # Async generation orchestrator
 │       ├── generation/           # Strategy pattern
-│       │   ├── interface.py      # SongGenerationStrategy ABC
-│       │   ├── mock_strategy.py  # MockSongGeneratorStrategy
-│       │   ├── suno_strategy.py  # SunoSongGeneratorStrategy
-│       │   └── selector.py       # get_strategy() — reads GENERATOR_STRATEGY
+│       │   ├── interface.py
+│       │   ├── mock_strategy.py
+│       │   ├── suno_strategy.py
+│       │   └── selector.py
 │       └── migrations/
 └── frontend/
     ├── .env.example
