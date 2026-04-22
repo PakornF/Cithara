@@ -8,6 +8,7 @@ export default function AudioPlayer({ src }: { src: string }) {
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
   const [playbackRate, setPlaybackRate] = useState(1);
+  const [loadError, setLoadError] = useState(false);
   const rates = [1, 1.25, 1.5, 2];
 
   useEffect(() => {
@@ -23,10 +24,13 @@ export default function AudioPlayer({ src }: { src: string }) {
     if (audioRef.current) {
       if (isPlaying) {
         audioRef.current.pause();
+        setIsPlaying(false);
       } else {
-        audioRef.current.play();
+        audioRef.current.play().then(() => setIsPlaying(true)).catch(() => {
+          setIsPlaying(false);
+          setLoadError(true);
+        });
       }
-      setIsPlaying(!isPlaying);
     }
   };
 
@@ -72,6 +76,14 @@ export default function AudioPlayer({ src }: { src: string }) {
     return `${mins}:${secs < 10 ? "0" : ""}${secs}`;
   };
 
+  if (loadError) {
+    return (
+      <div className="mt-2 rounded-xl border border-red-900/50 bg-red-950/20 px-4 py-3 text-sm text-red-400">
+        Audio could not be loaded.
+      </div>
+    );
+  }
+
   return (
     <div className="mt-2 rounded-xl border border-stone-800 bg-stone-900/80 p-4 shadow-sm">
       <audio
@@ -80,6 +92,7 @@ export default function AudioPlayer({ src }: { src: string }) {
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={handleLoadedMetadata}
         onEnded={() => setIsPlaying(false)}
+        onError={() => setLoadError(true)}
       />
       
       {/* Progress Bar */}

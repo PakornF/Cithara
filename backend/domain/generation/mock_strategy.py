@@ -23,10 +23,7 @@ class MockSongGeneratorStrategy(SongGenerationStrategy):
     No network calls are made.
     """
 
-    # Public placeholder audio file hosted on a CDN – always reachable
-    MOCK_AUDIO_URL = (
-        "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"
-    )
+    MOCK_AUDIO_URL = "https://www.w3schools.com/html/horse.mp3"
 
     def generate(self, request: GenerationRequest) -> GenerationResult:
         """
