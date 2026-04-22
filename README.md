@@ -61,7 +61,8 @@ Frontend runs at **http://localhost:3000**
 | `EMAIL_HOST_USER` | Sender email address |
 | `EMAIL_HOST_PASSWORD` | App password (Gmail: enable 2FA → [App Password](https://myaccount.google.com/apppasswords)) |
 | `DEFAULT_FROM_EMAIL` | From header for verification emails |
-| `SUNO_AI_API_KEY` | Suno API key |
+| `GENERATOR_STRATEGY` | `mock` (default) or `suno` — selects the song-generation strategy |
+| `SUNO_AI_API_KEY` | Suno API key — **required only when `GENERATOR_STRATEGY=suno`** |
 | `SUNO_API_BASE_URL` | Suno API base URL (default: `https://api.sunoapi.org`) |
 
 ### Frontend (`frontend/.env.local`)
@@ -72,6 +73,36 @@ Frontend runs at **http://localhost:3000**
 | `NEXT_PUBLIC_GOOGLE_CLIENT_ID` | Google OAuth client ID for web login |
 
 > **Dev tip:** If email is not configured, verification codes are printed to the Django terminal instead.
+
+---
+
+## Song Generation Strategy
+
+Cithara uses the **Strategy pattern** to swap generation behaviour via a single environment variable. The selection is centralised in `backend/domain/generation/selector.py` — no if/else logic is scattered through the rest of the codebase.
+
+### Run in mock mode (default — no API key needed)
+
+```bash
+# backend/.env
+GENERATOR_STRATEGY=mock
+```
+
+The mock strategy returns a fixed public audio URL immediately. Use this for local development and testing without network access.
+
+### Run in Suno mode (calls the real AI service)
+
+```bash
+# backend/.env
+GENERATOR_STRATEGY=suno
+SUNO_AI_API_KEY=your_api_key_here
+```
+
+> **Never commit your API key.** `backend/.env` is listed in `.gitignore`. Use `backend/.env.example` as a template (it contains only placeholder values).
+
+The Suno strategy:
+1. POSTs to `https://api.sunoapi.org/api/v1/generate` to create a generation task.
+2. Polls `GET /api/v1/generate/record-info?taskId=<id>` every 5 seconds (up to 5 minutes) until status is `SUCCESS`.
+3. Returns the `audioUrl` from the response.
 
 ---
 
