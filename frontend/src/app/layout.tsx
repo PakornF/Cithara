@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { Libre_Baskerville, Source_Sans_3 } from "next/font/google";
 import "./globals.css";
-import { Providers } from "./Providers";
-import { AuthNav } from "./AuthNav";
+import { Providers } from "@/components/Providers";
+import { AuthNav } from "@/components/AuthNav";
 
 const headingFont = Libre_Baskerville({
   weight: ["400", "700"],
